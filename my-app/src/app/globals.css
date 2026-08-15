@@ -1,0 +1,36 @@
+
+@import "tailwindcss";
+
+:root {
+  --base-card-foreground: #0A0A0A;
+  --base-muted-foreground: #737373;
+  --base-foreground: #0A0A0A;
+  --base-primary-foreground: #FAFAFA;
+  --base-sidebar: #FAFAFA;
+  --sidebar-accent-foreground: #171717;
+  --base-primary: #171717;
+  --base-background: #FFFFFF;
+  --accent: #3B82F6;
+}
+
+/* Dark mode palette is a placeholder until the theme/color Figma screens are
+   shared — see README "Known deviations". */
+[data-theme="dark"] {
+  --base-card-foreground: #FAFAFA;
+  --base-muted-foreground: #A3A3A3;
+  --base-foreground: #FAFAFA;
+  --base-primary-foreground: #0A0A0A;
+  --base-sidebar: #171717;
+  --sidebar-accent-foreground: #FAFAFA;
+  --base-primary: #FAFAFA;
+  --base-background: #0A0A0A;
+}
+
+[data-accent="Amber"] { --accent: #F59E0B; }
+[data-accent="Blue"] { --accent: #3B82F6; }
+[data-accent="Pink"] { --accent: #EC4899; }
+[data-accent="Rose"] { --accent: #F43F5E; }
+[data-accent="Emerald"] { --accent: #10B981; }
+[data-accent="Black"] { --accent: #171717; }
+
+
