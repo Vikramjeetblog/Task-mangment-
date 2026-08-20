@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { format } from "date-fns";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ChevronRight, Tag, X } from "lucide-react";
 import { PageToolbar } from "@/features/layout/components/PageToolbar";
 import { SelectMenu } from "@/shared/components/SelectMenu";
@@ -66,8 +65,9 @@ function Field({
   );
 }
 
-export default function NewTaskPage() {
+function NewTaskForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const columns = useKanbanStore((state) => state.columns);
   const addTask = useKanbanStore((state) => state.addTask);
   const addSubtask = useKanbanStore((state) => state.addSubtask);
@@ -75,7 +75,13 @@ export default function NewTaskPage() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState(columns[0]?.id ?? "todo");
+  // A board column can deep-link here with ?status=doing so the new task
+  // lands where the user clicked. Unknown values fall back to the first column.
+  const [status, setStatus] = useState(
+    columns.find((column) => column.id === searchParams.get("status"))?.id ??
+      columns[0]?.id ??
+      "todo",
+  );
   const [priority, setPriority] = useState<Priority>("Medium");
   const [assignee, setAssignee] = useState("Admin");
   const [dueDate, setDueDate] = useState<Date | null>(null);
@@ -367,5 +373,14 @@ export default function NewTaskPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// useSearchParams needs a Suspense boundary to keep the route prerenderable.
+export default function NewTaskPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewTaskForm />
+    </Suspense>
   );
 }
