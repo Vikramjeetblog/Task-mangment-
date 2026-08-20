@@ -20,6 +20,7 @@ export type UpdateProfilePayload = {
   name?: string;
   title?: string;
   username?: string;
+  email?: string;
 };
 
 export async function updateProfile(

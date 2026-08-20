@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MaxLength } from 'class-validator';
 
 // All fields optional so the frontend can send only what changed (PATCH, not PUT)
 export class UpdateProfileDto {
@@ -16,4 +16,9 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(30)
   username?: string;
+
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(254)
+  email?: string;
 }

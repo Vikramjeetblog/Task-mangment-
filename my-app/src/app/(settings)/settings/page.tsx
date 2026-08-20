@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil } from "lucide-react";
+import { Check, Pencil, X } from "lucide-react";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
 import { updateProfile } from "@/features/auth/api/auth.api";
 import { UserAvatar } from "@/features/auth/components/UserAvatar";
@@ -16,6 +16,11 @@ export default function ProfileSettingsPage() {
   const [title, setTitle] = useState(user?.title ?? "");
   const [username, setUsername] = useState(user?.username ?? "");
 
+  // The email row is read-only until the pencil is clicked, so a stray click
+  // can't quietly change the address the account signs in with.
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [editingEmail, setEditingEmail] = useState(false);
+
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -25,8 +30,17 @@ export default function ProfileSettingsPage() {
     setSaved(false);
     setIsSaving(true);
     try {
-      const updatedUser = await updateProfile({ name, title, username });
+      // Only send the email when it was actually edited — the API rejects a
+      // blank string, and guests have no address to send.
+      const emailChanged = editingEmail && email.trim() !== (user?.email ?? "");
+      const updatedUser = await updateProfile({
+        name,
+        title,
+        username,
+        ...(emailChanged ? { email: email.trim() } : {}),
+      });
       setUser(updatedUser);
+      setEditingEmail(false);
       setSaved(true);
     } catch {
       setError("Couldn't save your profile. Please try again.");
@@ -56,16 +70,58 @@ export default function ProfileSettingsPage() {
             <span className="font-sans text-xs font-medium text-[var(--base-primary)]">Email</span>
             <div className="flex items-center gap-2">
               {/* Guest accounts don't have an email, so there's nothing to edit here */}
-              <span className="font-sans text-sm text-[var(--base-primary)]">
-                {user?.email ?? "Guest account"}
-              </span>
-              {user?.email && (
-                <button className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--base-secondary)] text-[var(--base-primary)] hover:bg-gray-200">
-                  <Pencil
-                    className="h-3.5 w-3.5"
-                    strokeWidth={(1.5 * 24) / 14}
+              {editingEmail ? (
+                <>
+                  <input
+                    autoFocus
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void handleSave();
+                      if (e.key === "Escape") {
+                        setEmail(user?.email ?? "");
+                        setEditingEmail(false);
+                      }
+                    }}
+                    className="h-9 w-[180px] max-w-[180px] rounded-md border border-transparent bg-[var(--base-input)]/50 px-3 py-1 font-sans text-sm font-normal text-[var(--base-primary)] outline-none"
                   />
-                </button>
+                  <button
+                    onClick={() => void handleSave()}
+                    aria-label="Save email"
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--base-secondary)] text-[var(--base-primary)] hover:bg-[var(--base-accent)]"
+                  >
+                    <Check className="h-3.5 w-3.5" strokeWidth={(1.5 * 24) / 14} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEmail(user?.email ?? "");
+                      setEditingEmail(false);
+                    }}
+                    aria-label="Cancel"
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--base-secondary)] text-[var(--base-primary)] hover:bg-[var(--base-accent)]"
+                  >
+                    <X className="h-3.5 w-3.5" strokeWidth={(1.5 * 24) / 14} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="font-sans text-sm text-[var(--base-primary)]">
+                    {user?.email ?? "Guest account"}
+                  </span>
+                  {user?.email && (
+                    <button
+                      onClick={() => setEditingEmail(true)}
+                      aria-label="Edit email"
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--base-secondary)] text-[var(--base-primary)] hover:bg-[var(--base-accent)]"
+                    >
+                      <Pencil
+                        className="h-3.5 w-3.5"
+                        strokeWidth={(1.5 * 24) / 14}
+                      />
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>

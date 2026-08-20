@@ -73,7 +73,7 @@ export class UsersService {
 
   async updateProfile(
     id: string,
-    changes: { name?: string; title?: string; username?: string },
+    changes: { name?: string; title?: string; username?: string; email?: string },
   ): Promise<UserDocument | null> {
     return this.userModel.findByIdAndUpdate(id, changes, { new: true });
   }
