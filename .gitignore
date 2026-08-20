@@ -36,3 +36,6 @@ next-env.d.ts
 
 # uploads (local dev artifacts)
 backend/uploads/
+
+# local archives
+*.zip
