@@ -95,7 +95,11 @@ type KanbanStore = {
   ) => Promise<void>;
   setTaskPriority: (taskId: string, priority: Priority) => Promise<void>;
   setTaskDueDate: (taskId: string, isoDate: string) => Promise<void>;
-  addSubtask: (taskId: string, title: string) => Promise<void>;
+  addSubtask: (
+    taskId: string,
+    title: string,
+    options?: { dueDate?: string; priority?: Priority },
+  ) => Promise<void>;
   setSubtaskPriority: (
     taskId: string,
     subtaskId: string,
@@ -236,8 +240,16 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
     await get().load();
   },
 
-  addSubtask: async (taskId, title) => {
-    await createSubtask(taskId, title);
+  addSubtask: async (taskId, title, options) => {
+    // The POST takes a due date but not a priority, so a requested priority
+    // needs a follow-up PATCH against the subtask the server just appended.
+    const updated = await createSubtask(taskId, title, options?.dueDate);
+    const created = updated.subtasks.at(-1);
+    if (created && options?.priority) {
+      await updateSubtask(taskId, created.id, {
+        priority: toApiPriority(options.priority),
+      });
+    }
     await get().load();
   },
 

@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { MoreHorizontal, Plus, type LucideIcon } from "lucide-react";
 import { priorityIcons, type Priority } from "@/shared/lib/priority";
 import { useDismiss } from "@/shared/hooks/useDismiss";
 import { useProjectsStore, type Project } from "../store/useProjectsStore";
+import { DatePickerField } from "@/shared/components/DatePickerField";
+import { SelectMenu } from "@/shared/components/SelectMenu";
+import { ProjectNameCell } from "./ProjectNameCell";
 import { UserAvatar } from "@/features/auth/components/UserAvatar";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
 
@@ -20,6 +22,18 @@ const priorityStyles: Record<Priority, { icon: LucideIcon; color: string }> = {
   Medium: { icon: priorityIcons.Medium, color: "text-amber-500" },
   Low: { icon: priorityIcons.Low, color: "text-neutral-400" },
 };
+
+const priorityOptions = (["Urgent", "High", "Medium", "Low"] as Priority[]).map(
+  (level) => {
+    const Icon = priorityStyles[level].icon;
+    return {
+      value: level,
+      label: level,
+      className: priorityStyles[level].color,
+      adornment: <Icon className="h-3.5 w-3.5" />,
+    };
+  },
+);
 
 function LeadAvatar({ lead }: { lead: string }) {
   const user = useAuthStore((state) => state.user);
@@ -80,6 +94,7 @@ export function ProjectsTable() {
   const projects = useProjectsStore((state) => state.projects);
   const addProject = useProjectsStore((state) => state.addProject);
   const deleteProject = useProjectsStore((state) => state.deleteProject);
+  const updateProject = useProjectsStore((state) => state.updateProject);
   const query = useProjectsStore((state) => state.query);
   const priorityFilter = useProjectsStore((state) => state.priorityFilter);
   const loading = useProjectsStore((state) => state.loading);
@@ -140,34 +155,39 @@ export function ProjectsTable() {
             )}
 
             {visible.map((project) => {
-              const { icon: PriorityIcon, color } =
-                priorityStyles[project.priority];
               return (
                 <tr
                   key={project.id}
                   style={{ borderTop: "1px solid var(--base-border)" }}
                 >
                   <td className="px-4 py-3">
-                    <Link
-                      href="/projects/1"
-                      className="align-middle font-sans text-sm font-medium text-[var(--base-primary)] hover:underline"
-                    >
-                      {project.name}
-                    </Link>
+                    <ProjectNameCell id={project.id} name={project.name} />
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`flex items-center gap-1.5 font-sans text-sm ${color}`}
-                    >
-                      <PriorityIcon className="h-3.5 w-3.5" />
-                      {project.priority}
-                    </span>
+                    <SelectMenu
+                      value={project.priority}
+                      options={priorityOptions}
+                      align="left"
+                      onChange={(next) =>
+                        void updateProject(project.id, { priority: next })
+                      }
+                    />
                   </td>
                   <td className="px-4 py-3">
                     <LeadAvatar lead={project.lead} />
                   </td>
                   <td className="px-4 py-3 align-middle font-sans text-sm font-normal text-[var(--base-primary)]">
-                    {project.dueDate}
+                    <DatePickerField
+                      variant="plain"
+                      value={
+                        project.dueDateIso ? new Date(project.dueDateIso) : null
+                      }
+                      onChange={(date) =>
+                        void updateProject(project.id, {
+                          dueDate: date.toISOString(),
+                        })
+                      }
+                    />
                   </td>
                   <td className="px-4 py-3 text-right align-middle">
                     <RowActions onDelete={() => deleteProject(project.id)} />

@@ -5,6 +5,7 @@ import {
   createProject,
   deleteProject,
   listProjects,
+  updateProject,
   type ApiProject,
 } from "../api/projects.api";
 
@@ -20,7 +21,10 @@ export type Project = {
   name: string;
   priority: Priority;
   lead: string;
+  /** Formatted for display. */
   dueDate: string;
+  /** Raw value, for the date picker. */
+  dueDateIso?: string;
 };
 
 type ProjectsStore = {
@@ -29,6 +33,10 @@ type ProjectsStore = {
   error: string | null;
   load: () => Promise<void>;
   addProject: (input: NewProjectInput) => Promise<void>;
+  updateProject: (
+    id: string,
+    changes: { name?: string; priority?: Priority; dueDate?: string },
+  ) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
 
   // View state for the projects toolbar — kept beside the data so the search
@@ -45,6 +53,7 @@ function toProject(project: ApiProject): Project {
     name: project.name,
     priority: toUiPriority(project.priority),
     lead: project.lead ?? "+",
+    dueDateIso: project.dueDate,
     dueDate: project.dueDate
       ? new Date(project.dueDate).toLocaleDateString("en-GB", {
           day: "numeric",
@@ -68,6 +77,15 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
     } catch {
       set({ error: "Couldn't load projects.", loading: false });
     }
+  },
+
+  updateProject: async (id, changes) => {
+    await updateProject(id, {
+      name: changes.name,
+      priority: changes.priority ? toApiPriority(changes.priority) : undefined,
+      dueDate: changes.dueDate,
+    });
+    await get().load();
   },
 
   addProject: async (input) => {

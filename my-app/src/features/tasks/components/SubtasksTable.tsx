@@ -32,17 +32,6 @@ const priorityOptions = (["Urgent", "High", "Medium", "Low"] as Priority[]).map(
   },
 );
 
-// Each level draws its own signal glyph — the bars fill up as priority rises.
-function PriorityCell({ priority }: { priority: Priority }) {
-  const Icon = priorityIcons[priority];
-  return (
-    <span className={`flex items-center gap-2.5 ${priorityColors[priority]}`}>
-      <Icon className="h-3.5 w-3.5" />
-      {priority}
-    </span>
-  );
-}
-
 /** Subtasks inherit the task's assignee — the API has no per-subtask member. */
 function MemberCell({ member }: { member: string }) {
   if (!member || member === "Unassigned") {
@@ -112,12 +101,33 @@ export function SubtasksTable({
   const [expanded, setExpanded] = useState(true);
   const [adding, setAdding] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
+  const [draftPriority, setDraftPriority] = useState<Priority>("Medium");
+  const [draftDue, setDraftDue] = useState<Date | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  function commitDraft() {
-    const title = draftTitle.trim();
-    if (title) addSubtask(taskId, title);
+  function resetDraft() {
     setDraftTitle("");
+    setDraftPriority("Medium");
+    setDraftDue(null);
     setAdding(false);
+  }
+
+  async function commitDraft() {
+    const title = draftTitle.trim();
+    if (!title) {
+      resetDraft();
+      return;
+    }
+    setSaving(true);
+    try {
+      await addSubtask(taskId, title, {
+        priority: draftPriority,
+        dueDate: draftDue?.toISOString(),
+      });
+      resetDraft();
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -201,25 +211,64 @@ export function SubtasksTable({
 
               {/* Sits inside the table as the final row, so it lines up with the
                   columns and keeps the same row height */}
-              <tr>
-                <td colSpan={5} className="p-3">
-                  {adding ? (
+              {adding ? (
+                // The draft fills the same five columns as a saved row, so
+                // priority and due date can be set before it's created.
+                <tr className="border-b">
+                  <td className="min-w-[85px] p-3">
                     <input
                       autoFocus
                       value={draftTitle}
                       onChange={(event) => setDraftTitle(event.target.value)}
-                      onBlur={commitDraft}
                       onKeyDown={(event) => {
-                        if (event.key === "Enter") commitDraft();
-                        if (event.key === "Escape") {
-                          setDraftTitle("");
-                          setAdding(false);
-                        }
+                        if (event.key === "Enter") void commitDraft();
+                        if (event.key === "Escape") resetDraft();
                       }}
                       placeholder="Subtask name"
                       className="h-5 w-full font-sans text-xs font-medium text-[var(--base-primary)] outline-none placeholder:text-[var(--base-muted-foreground)]"
                     />
-                  ) : (
+                  </td>
+                  <td className="min-w-[85px] p-3">
+                    <SelectMenu
+                      value={draftPriority}
+                      options={priorityOptions}
+                      align="left"
+                      onChange={(next) => setDraftPriority(next)}
+                    />
+                  </td>
+                  <td className="min-w-[85px] p-3">
+                    <MemberCell member={assignee} />
+                  </td>
+                  <td className="min-w-[85px] p-3">
+                    <DatePickerField
+                      variant="plain"
+                      value={draftDue}
+                      onChange={(date) => setDraftDue(date)}
+                    />
+                  </td>
+                  <td className="min-w-[85px] p-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => void commitDraft()}
+                        disabled={!draftTitle.trim() || saving}
+                        className="rounded-md px-2 py-1 font-sans text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+                        style={{ background: "var(--accent)" }}
+                      >
+                        {saving ? "Adding…" : "Add"}
+                      </button>
+                      <button
+                        onClick={resetDraft}
+                        disabled={saving}
+                        className="rounded-md border border-[var(--base-border)] px-2 py-1 font-sans text-xs font-medium text-[var(--base-primary)] hover:bg-[var(--base-accent)]"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                <tr>
+                  <td colSpan={5} className="p-3">
                     <button
                       onClick={() => setAdding(true)}
                       className="flex h-5 items-center gap-2.5 align-middle font-sans text-xs font-medium text-[var(--base-primary)] hover:underline"
@@ -227,9 +276,9 @@ export function SubtasksTable({
                       <Plus className="h-4 w-4" />
                       Add Subtasks
                     </button>
-                  )}
-                </td>
-              </tr>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { PageToolbar } from "@/features/layout/components/PageToolbar";
 import { TaskProperties } from "@/features/tasks/components/TaskProperties";
 import { SubtasksTable } from "@/features/tasks/components/SubtasksTable";
+import { TaskHeading } from "@/features/tasks/components/TaskHeading";
 import { TaskComments } from "@/features/tasks/components/TaskComments";
 import { TaskActionsBar } from "@/features/tasks/components/TaskActionsBar";
 import { TaskDetailsPanel } from "@/features/tasks/components/TaskDetailsPanel";
@@ -85,15 +86,12 @@ export default function TaskDetailPage() {
         >
           {/* Title + description block: 581px wide in the design, but capped
               rather than fixed so it reflows on narrow screens. */}
-          <div className="flex w-full max-w-[581px] flex-col gap-1.5">
-            <h1 className="font-sans text-2xl font-semibold tracking-[-0.4px] text-[var(--base-primary)]">
-              {task.title}
-            </h1>
-            <p className="font-sans text-sm text-[var(--base-muted-foreground)]">
-              {task.description ??
-                "No description yet — add one from the task composer."}
-            </p>
-          </div>
+          <TaskHeading
+            columnId={column.id}
+            taskId={task.id}
+            title={task.title}
+            description={task.description}
+          />
 
           <TaskProperties
             assignee={task.assignee}

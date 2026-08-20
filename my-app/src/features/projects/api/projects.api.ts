@@ -29,6 +29,16 @@ export async function createProject(
   return data;
 }
 
+export type UpdateProjectPayload = Partial<CreateProjectPayload>;
+
+export async function updateProject(
+  id: string,
+  payload: UpdateProjectPayload,
+): Promise<ApiProject> {
+  const { data } = await apiClient.patch<ApiProject>(`/projects/${id}`, payload);
+  return data;
+}
+
 export async function deleteProject(id: string): Promise<void> {
   await apiClient.delete(`/projects/${id}`);
 }
