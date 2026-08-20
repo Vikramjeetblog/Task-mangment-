@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useDismiss } from "@/shared/hooks/useDismiss";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown, GalleryVerticalEnd, ChevronsUpDown } from "lucide-react";
 import { DashboardSquare03Icon } from "hugeicons-react";
 import { WorkspaceMenu } from "@/features/layout/components/WorkspaceMenu";
+import { UserAvatar } from "@/features/auth/components/UserAvatar";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
+import { useLayoutStore } from "@/features/layout/store/useLayoutStore";
 
 const navItems = [
   { href: "/tasks", label: "Tasks", icon: DashboardSquare03Icon },
@@ -15,22 +19,39 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
+  const workspaceRef = useDismiss(workspaceMenuOpen, () =>
+    setWorkspaceMenuOpen(false),
+  );
   const [navOpen, setNavOpen] = useState(true);
+  const user = useAuthStore((state) => state.user);
+  const closeSidebar = useLayoutStore((state) => state.closeSidebar);
+
+  // On phones the sidebar floats over the page, so picking a destination
+  // should get it out of the way.
+  function handleNavigate() {
+    if (window.matchMedia("(max-width: 767px)").matches) closeSidebar();
+  }
+
+  // Guarded route, so user should always be set here. Fallback just avoids a crash on first render.
+  const displayName = user?.name ?? "User";
 
   return (
     <aside
-      className="flex h-screen w-64 flex-col border-r border-gray-200"
-      style={{ background: "var(--base-sidebar)" }}
+      className="flex h-full w-[min(16rem,80vw)] flex-col md:w-64"
+      style={{
+        background: "var(--base-sidebar)",
+        borderRight: "1px solid var(--base-border)",
+      }}
     >
-      <div className="relative p-3">
+      <div ref={workspaceRef} className="relative p-3">
         <button
           onClick={() => setWorkspaceMenuOpen(!workspaceMenuOpen)}
-          className="flex w-full items-center justify-between rounded-md px-2 py-1.5 hover:bg-gray-100"
+          className="flex w-full items-center justify-between rounded-md px-2 py-1.5 hover:bg-[var(--base-accent)]"
         >
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-full bg-purple-500" />
+            <UserAvatar user={user} size={24} />
             <span className="font-sans text-sm font-medium leading-none text-[var(--base-card-foreground)]">
-              Dexter
+              {displayName}
             </span>
           </div>
           <ChevronsUpDown className="h-4 w-4 text-[var(--base-card-foreground)]" />
@@ -42,7 +63,7 @@ export function Sidebar() {
       <div className="flex-1 p-3">
         <button
           onClick={() => setNavOpen(!navOpen)}
-          className="mb-1 flex w-full items-center justify-between rounded-md px-2 py-1 hover:bg-gray-100"
+          className="mb-1 flex w-full items-center justify-between rounded-md px-2 py-1 hover:bg-[var(--base-accent)]"
         >
           <span className="font-sans text-sm font-medium leading-none text-[var(--base-card-foreground)]">
             Workspace
@@ -63,11 +84,20 @@ export function Sidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium leading-none ${
+                  onClick={handleNavigate}
+                  className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium leading-none ${
                     isActive
-                      ? "bg-gray-100 text-[var(--sidebar-accent-foreground)]"
-                      : "text-gray-700 hover:bg-gray-100"
+                      ? "text-[var(--sidebar-accent-foreground)]"
+                      : "text-[var(--base-primary)] hover:bg-[var(--base-accent)]"
                   }`}
+                  style={
+                    isActive
+                      ? {
+                          background: "var(--accent)",
+                          color: "#fff",
+                        }
+                      : undefined
+                  }
                 >
                   <Icon className="h-4 w-4" />
                   {item.label}
@@ -77,14 +107,6 @@ export function Sidebar() {
           </nav>
         )}
       </div>
-
-      <Link
-        href="/settings"
-        className="flex items-center gap-2 border-t border-gray-200 p-3 hover:bg-gray-100"
-      >
-        <div className="h-6 w-6 rounded-full bg-purple-500" />
-        <span className="text-sm text-gray-700">Dexter</span>
-      </Link>
     </aside>
   );
 }
