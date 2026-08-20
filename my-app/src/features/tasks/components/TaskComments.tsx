@@ -8,6 +8,7 @@ import { RiAttachmentLine } from "react-icons/ri";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
 import { useDismiss } from "@/shared/hooks/useDismiss";
 import { useKanbanStore, type TaskComment } from "../store/useKanbanStore";
+import { UserAvatar } from "@/features/auth/components/UserAvatar";
 
 // Scaled so the 13.33px icons draw a true 1.5px stroke (see TaskActionsBar).
 const STROKE = (1.5 * 24) / 13.33;
@@ -106,6 +107,7 @@ function CommentInput({
 }) {
   const [value, setValue] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const user = useAuthStore((state) => state.user);
 
   function submit() {
     const body = value.trim();
@@ -117,7 +119,7 @@ function CommentInput({
   return (
     <div className={className}>
       {showAvatar && (
-        <div className="h-6 w-6 flex-shrink-0 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400" />
+        <UserAvatar user={user} size={24} className="flex-shrink-0" />
       )}
       <input
         type="text"
@@ -204,7 +206,7 @@ export function TaskComments({
             <div className="flex flex-col gap-2 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400" />
+                  <UserAvatar user={user} size={24} />
                   <span className="font-sans text-xs font-medium text-[var(--base-primary)]">
                     {comment.author}
                   </span>
@@ -245,7 +247,7 @@ export function TaskComments({
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-5 w-5 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400" />
+                    <UserAvatar user={user} size={20} />
                     <span className="font-sans text-xs font-medium text-[var(--base-primary)]">
                       {reply.author}
                     </span>

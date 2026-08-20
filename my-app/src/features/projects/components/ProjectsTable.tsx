@@ -6,6 +6,8 @@ import { MoreHorizontal, Plus, type LucideIcon } from "lucide-react";
 import { priorityIcons, type Priority } from "@/shared/lib/priority";
 import { useDismiss } from "@/shared/hooks/useDismiss";
 import { useProjectsStore, type Project } from "../store/useProjectsStore";
+import { UserAvatar } from "@/features/auth/components/UserAvatar";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
 
 // Scaled so the 16px icon draws a true 1.5px stroke (see TaskActionsBar).
 const ACTION_STROKE = (1.5 * 24) / 16;
@@ -20,6 +22,7 @@ const priorityStyles: Record<Priority, { icon: LucideIcon; color: string }> = {
 };
 
 function LeadAvatar({ lead }: { lead: string }) {
+  const user = useAuthStore((state) => state.user);
   if (lead === "CN") {
     return (
       <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--base-secondary)] text-[10px] font-medium text-[var(--base-muted-foreground)]">
@@ -37,7 +40,7 @@ function LeadAvatar({ lead }: { lead: string }) {
   }
 
   return (
-    <div className="h-6 w-6 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400" />
+    <UserAvatar user={user} size={24} />
   );
 }
 

@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { useKanbanStore } from "../store/useKanbanStore";
 import { useDismiss } from "@/shared/hooks/useDismiss";
+import { UserAvatar } from "@/features/auth/components/UserAvatar";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
 
 type Task = {
   id: string;
@@ -33,6 +35,7 @@ const assigneeOptions = [
 
 export function TaskCard({ columnId, task }: { columnId: string; task: Task }) {
   const columns = useKanbanStore((state) => state.columns);
+  const user = useAuthStore((state) => state.user);
   const deleteTask = useKanbanStore((state) => state.deleteTask);
   const updateTask = useKanbanStore((state) => state.updateTask);
   const moveTask = useKanbanStore((state) => state.moveTask);
@@ -201,7 +204,7 @@ export function TaskCard({ columnId, task }: { columnId: string; task: Task }) {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400" />
+          <UserAvatar user={user} size={32} />
           <span className="align-middle font-sans text-xs font-medium leading-none text-[var(--base-foreground)]">
             {task.assignee}
           </span>

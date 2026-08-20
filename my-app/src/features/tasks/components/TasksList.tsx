@@ -7,6 +7,8 @@ import { priorityIcons, type Priority } from "@/shared/lib/priority";
 import { useDismiss } from "@/shared/hooks/useDismiss";
 import { useKanbanStore } from "../store/useKanbanStore";
 import { useTaskViewStore } from "../store/useTaskViewStore";
+import { UserAvatar } from "@/features/auth/components/UserAvatar";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
 
 // Scaled so the 16px icon draws a true 1.5px stroke (see TaskActionsBar).
 const ACTION_STROKE = (1.5 * 24) / 16;
@@ -66,6 +68,7 @@ export function TasksList() {
   // The list is the same data as the board, grouped by column instead of
   // laid out in them — so a task added in either view shows up in both.
   const columns = useKanbanStore((state) => state.columns);
+  const user = useAuthStore((state) => state.user);
   const addTask = useKanbanStore((state) => state.addTask);
   const deleteTask = useKanbanStore((state) => state.deleteTask);
 
@@ -165,7 +168,7 @@ export function TasksList() {
                         )}
                         {visibleFields.Members && (
                           <td className="min-w-[85px] p-3 align-middle">
-                            <div className="h-5 w-5 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400" />
+                            <UserAvatar user={user} size={20} />
                           </td>
                         )}
                         {visibleFields["Due Date"] && (
