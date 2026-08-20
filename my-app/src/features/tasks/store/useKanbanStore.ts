@@ -1,107 +1,288 @@
 import { create } from "zustand";
+import type { Priority } from "@/shared/lib/priority";
+import {
+  createComment,
+  createResource,
+  createSubtask,
+  createTask,
+  deleteComment,
+  deleteResource,
+  deleteSubtask,
+  updateSubtask,
+  deleteTask,
+  listTasks,
+  toApiPriority,
+  toggleReaction,
+  toUiPriority,
+  updateTask as updateTaskRequest,
+  type ApiStatus,
+  type ApiTask,
+} from "../api/tasks.api";
 
-type Task = {
+export type Subtask = {
+  id: string;
+  title: string;
+  priority: Priority;
+  dueDate: string;
+  dueDateIso?: string;
+  done: boolean;
+};
+
+export type TaskComment = {
+  id: string;
+  body: string;
+  author: string;
+  postedAt: string;
+  parentId?: string;
+  reactions: string[];
+};
+
+export type TaskResource = { id: string; name: string; url: string };
+
+export type Task = {
   id: string;
   title: string;
   assignee: string;
   dueDate: string;
+  dueDateIso?: string;
   tags: string[];
+  priority: Priority;
+  description?: string;
+  subtasks: Subtask[];
+  comments: TaskComment[];
+  resources: TaskResource[];
 };
 
 type Column = {
-  id: string;
+  id: ApiStatus;
   title: string;
   tasks: Task[];
 };
 
-type KanbanStore = {
-  columns: Column[];
-  addTask: (columnId: string, title: string, assignee: string, tags: string[]) => void;
-  updateTask: (columnId: string, taskId: string, updates: Partial<Task>) => void;
-  deleteTask: (columnId: string, taskId: string) => void;
-  moveTask: (fromColumnId: string, toColumnId: string, taskId: string) => void;
+export type NewTaskInput = {
+  title: string;
+  assignee?: string;
+  tags?: string[];
+  priority?: Priority;
+  dueDate?: string;
+  description?: string;
 };
 
-export const useKanbanStore = create<KanbanStore>((set) => ({
-  columns: [
-    {
-      id: "todo",
-      title: "To Do",
-      tasks: [
-        { id: "1", title: "Write API Documentation", assignee: "Admin", dueDate: "29 Jul", tags: ["Deployment", "Deployment"] },
-        { id: "2", title: "Implement Search Function", assignee: "Admin", dueDate: "29 Jul", tags: ["Deployment", "Deployment"] },
-        { id: "3", title: "Deploy to Production", assignee: "Admin", dueDate: "29 Jul", tags: ["Deployment", "Deployment"] },
-      ],
-    },
-    {
-      id: "doing",
-      title: "Doing",
-      tasks: [
-        { id: "4", title: "Code Review Completed", assignee: "Admin", dueDate: "29 Jul", tags: ["Deployment", "Deployment"] },
-        { id: "5", title: "Design Mockups Finalized", assignee: "Admin", dueDate: "29 Jul", tags: ["Deployment", "Deployment"] },
-      ],
-    },
-    {
-      id: "completed",
-      title: "Completed",
-      tasks: [
-        { id: "6", title: "Feature Testing Passed", assignee: "QA Team", dueDate: "30 Jul", tags: ["Testing", "Passed"] },
-        { id: "7", title: "UI Design Updated", assignee: "Designer", dueDate: "31 Jul", tags: ["Design", "Updated"] },
-        { id: "8", title: "Security Audit Scheduled", assignee: "Security", dueDate: "01 Aug", tags: ["Audit", "Scheduled"] },
-      ],
-    },
-    {
-      id: "onhold",
-      title: "On Hold",
-      tasks: [
-        { id: "9", title: "UI Review", assignee: "Design", dueDate: "29 Jul", tags: ["Design", "Review"] },
-        { id: "10", title: "Backend Integration", assignee: "Dev Team", dueDate: "30 Jul", tags: ["Dev", "Deployment"] },
-        { id: "11", title: "User Feedback Review", assignee: "Product", dueDate: "31 Jul", tags: ["Product", "Research"] },
-        { id: "12", title: "Performance Optimization", assignee: "Engineer", dueDate: "01 Aug", tags: ["Engineering", "Optimization"] },
-      ],
-    },
-  ],
-  addTask: (columnId, title, assignee, tags) =>
-    set((state) => ({
-      columns: state.columns.map((col) =>
-        col.id === columnId
-          ? { ...col, tasks: [...col.tasks, { id: Date.now().toString(), title, assignee, dueDate: "TBD", tags }] }
-          : col
-      ),
-    })),
-  updateTask: (columnId, taskId, updates) =>
-    set((state) => ({
-      columns: state.columns.map((col) =>
-        col.id === columnId
-          ? {
-              ...col,
-              tasks: col.tasks.map((t) => (t.id === taskId ? { ...t, ...updates } : t)),
-            }
-          : col
-      ),
-    })),
-  deleteTask: (columnId, taskId) =>
-    set((state) => ({
-      columns: state.columns.map((col) =>
-        col.id === columnId ? { ...col, tasks: col.tasks.filter((t) => t.id !== taskId) } : col
-      ),
-    })),
-  moveTask: (fromColumnId, toColumnId, taskId) =>
-    set((state) => {
-      const fromCol = state.columns.find((c) => c.id === fromColumnId);
-      const task = fromCol?.tasks.find((t) => t.id === taskId);
-      if (!task) return state;
+/** The board's columns are fixed; tasks are bucketed into them by status. */
+const COLUMN_DEFS: { id: ApiStatus; title: string }[] = [
+  { id: "todo", title: "To Do" },
+  { id: "doing", title: "Doing" },
+  { id: "completed", title: "Completed" },
+  { id: "onhold", title: "On Hold" },
+];
 
-      return {
-        columns: state.columns.map((col) => {
-          if (col.id === fromColumnId) {
-            return { ...col, tasks: col.tasks.filter((t) => t.id !== taskId) };
-          }
-          if (col.id === toColumnId) {
-            return { ...col, tasks: [...col.tasks, task] };
-          }
-          return col;
-        }),
-      };
-    }),
+type KanbanStore = {
+  columns: Column[];
+  loading: boolean;
+  error: string | null;
+  load: () => Promise<void>;
+  addTask: (columnId: string, input: NewTaskInput) => Promise<string>;
+  updateTask: (
+    columnId: string,
+    taskId: string,
+    updates: Partial<Task>,
+  ) => Promise<void>;
+  deleteTask: (columnId: string, taskId: string) => Promise<void>;
+  moveTask: (
+    fromColumnId: string,
+    toColumnId: string,
+    taskId: string,
+  ) => Promise<void>;
+  setTaskPriority: (taskId: string, priority: Priority) => Promise<void>;
+  setTaskDueDate: (taskId: string, isoDate: string) => Promise<void>;
+  addSubtask: (taskId: string, title: string) => Promise<void>;
+  setSubtaskPriority: (
+    taskId: string,
+    subtaskId: string,
+    priority: Priority,
+  ) => Promise<void>;
+  setTaskAssignee: (taskId: string, assignee: string) => Promise<void>;
+  setSubtaskDueDate: (
+    taskId: string,
+    subtaskId: string,
+    isoDate: string,
+  ) => Promise<void>;
+  removeSubtask: (taskId: string, subtaskId: string) => Promise<void>;
+  addComment: (
+    taskId: string,
+    body: string,
+    parentId?: string,
+  ) => Promise<void>;
+  removeComment: (taskId: string, commentId: string) => Promise<void>;
+  reactToComment: (
+    taskId: string,
+    commentId: string,
+    emoji: string,
+  ) => Promise<void>;
+  addResource: (taskId: string, name: string, url: string) => Promise<void>;
+  removeResource: (taskId: string, resourceId: string) => Promise<void>;
+};
+
+function toTask(task: ApiTask): Task {
+  return {
+    id: task.id,
+    title: task.title,
+    description: task.description,
+    assignee: task.assignee ?? "Unassigned",
+    dueDate: task.dueDate
+      ? new Date(task.dueDate).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+      : "No date",
+    dueDateIso: task.dueDate,
+    tags: task.labels,
+    priority: toUiPriority(task.priority),
+    subtasks: task.subtasks.map((subtask) => ({
+      id: subtask.id,
+      title: subtask.title,
+      priority: toUiPriority(subtask.priority),
+      dueDate: subtask.dueDate
+        ? new Date(subtask.dueDate).toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          })
+        : "No date",
+      dueDateIso: subtask.dueDate,
+      done: subtask.done,
+    })),
+    comments: task.comments.map((comment) => ({
+      id: comment.id,
+      body: comment.body,
+      author: comment.author.name,
+      postedAt: new Date(comment.createdAt).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+      }),
+      parentId: comment.parentId,
+      reactions: comment.reactions ?? [],
+    })),
+    resources: task.resources ?? [],
+  };
+}
+
+/** Buckets the flat task list from the API into the board's columns. */
+function toColumns(tasks: ApiTask[]): Column[] {
+  return COLUMN_DEFS.map((def) => ({
+    ...def,
+    tasks: tasks.filter((task) => task.status === def.id).map(toTask),
+  }));
+}
+
+export const useKanbanStore = create<KanbanStore>((set, get) => ({
+  columns: toColumns([]),
+  loading: false,
+  error: null,
+
+  load: async () => {
+    set({ loading: true, error: null });
+    try {
+      set({ columns: toColumns(await listTasks()), loading: false });
+    } catch {
+      set({ error: "Couldn't load tasks.", loading: false });
+    }
+  },
+
+  addTask: async (columnId, input) => {
+    const created = await createTask({
+      title: input.title,
+      description: input.description,
+      status: columnId as ApiStatus,
+      priority: input.priority ? toApiPriority(input.priority) : undefined,
+      assignee: input.assignee,
+      dueDate: input.dueDate,
+      labels: input.tags,
+    });
+    await get().load();
+    return created.id;
+  },
+
+  updateTask: async (_columnId, taskId, updates) => {
+    await updateTaskRequest(taskId, {
+      title: updates.title,
+      description: updates.description,
+      assignee: updates.assignee,
+      labels: updates.tags,
+      priority: updates.priority ? toApiPriority(updates.priority) : undefined,
+    });
+    await get().load();
+  },
+
+  deleteTask: async (_columnId, taskId) => {
+    await deleteTask(taskId);
+    await get().load();
+  },
+
+  // Moving a task between columns is just a status change.
+  moveTask: async (_fromColumnId, toColumnId, taskId) => {
+    await updateTaskRequest(taskId, { status: toColumnId as ApiStatus });
+    await get().load();
+  },
+
+  setTaskPriority: async (taskId, priority) => {
+    await updateTaskRequest(taskId, { priority: toApiPriority(priority) });
+    await get().load();
+  },
+
+  setTaskDueDate: async (taskId, isoDate) => {
+    await updateTaskRequest(taskId, { dueDate: isoDate });
+    await get().load();
+  },
+
+  addSubtask: async (taskId, title) => {
+    await createSubtask(taskId, title);
+    await get().load();
+  },
+
+  setSubtaskPriority: async (taskId, subtaskId, priority) => {
+    await updateSubtask(taskId, subtaskId, { priority: toApiPriority(priority) });
+    await get().load();
+  },
+
+  setTaskAssignee: async (taskId, assignee) => {
+    await updateTaskRequest(taskId, { assignee });
+    await get().load();
+  },
+
+  setSubtaskDueDate: async (taskId, subtaskId, isoDate) => {
+    await updateSubtask(taskId, subtaskId, { dueDate: isoDate });
+    await get().load();
+  },
+
+  removeSubtask: async (taskId, subtaskId) => {
+    await deleteSubtask(taskId, subtaskId);
+    await get().load();
+  },
+
+  addComment: async (taskId, body, parentId) => {
+    await createComment(taskId, body, parentId);
+    await get().load();
+  },
+
+  removeComment: async (taskId, commentId) => {
+    await deleteComment(taskId, commentId);
+    await get().load();
+  },
+
+  reactToComment: async (taskId, commentId, emoji) => {
+    await toggleReaction(taskId, commentId, emoji);
+    await get().load();
+  },
+
+  addResource: async (taskId, name, url) => {
+    await createResource(taskId, name, url);
+    await get().load();
+  },
+
+  removeResource: async (taskId, resourceId) => {
+    await deleteResource(taskId, resourceId);
+    await get().load();
+  },
 }));

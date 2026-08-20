@@ -16,6 +16,19 @@ export async function getMe(): Promise<PublicUser> {
   return data;
 }
 
+export type UpdateProfilePayload = {
+  name?: string;
+  title?: string;
+  username?: string;
+};
+
+export async function updateProfile(
+  payload: UpdateProfilePayload,
+): Promise<PublicUser> {
+  const { data } = await apiClient.patch<PublicUser>("/auth/me", payload);
+  return data;
+}
+
 export function googleLoginUrl(): string {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   return `${apiUrl}/auth/google`;
