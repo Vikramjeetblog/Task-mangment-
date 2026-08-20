@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ChevronRight, Tag, X } from "lucide-react";
+import { ArrowLeft, ChevronRight, Plus, Tag, X } from "lucide-react";
 import { PageToolbar } from "@/features/layout/components/PageToolbar";
 import { SelectMenu } from "@/shared/components/SelectMenu";
 import { DatePickerField } from "@/shared/components/DatePickerField";
@@ -274,18 +274,36 @@ function NewTaskForm() {
                     </button>
                   </div>
                 ))}
-                <input
-                  value={subtaskDraft}
-                  onChange={(event) => setSubtaskDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      stageSubtask();
-                    }
-                  }}
-                  placeholder="Add a subtask..."
-                  className="h-9 w-full rounded-md border border-[var(--base-border)] px-3 font-sans text-sm text-[var(--base-primary)] outline-none placeholder:text-[var(--base-muted-foreground)]"
-                />
+                {/* Enter or the Add button stages one; repeat for as many as
+                    the task needs. They're created after the task itself. */}
+                <div className="flex items-center gap-2">
+                  <input
+                    value={subtaskDraft}
+                    onChange={(event) => setSubtaskDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        stageSubtask();
+                      }
+                    }}
+                    placeholder="Add a subtask, then press Enter"
+                    className="h-9 w-full rounded-md border border-[var(--base-border)] px-3 font-sans text-sm text-[var(--base-primary)] outline-none placeholder:text-[var(--base-muted-foreground)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={stageSubtask}
+                    disabled={!subtaskDraft.trim()}
+                    className="flex h-9 shrink-0 items-center gap-1 rounded-md border border-[var(--base-border)] px-3 font-sans text-xs font-medium text-[var(--base-primary)] hover:bg-[var(--base-accent)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add
+                  </button>
+                </div>
+                {subtasks.length > 0 && (
+                  <p className="font-sans text-xs font-normal text-[var(--base-muted-foreground)]">
+                    {subtasks.length} subtask{subtasks.length === 1 ? "" : "s"} will be created with this task
+                  </p>
+                )}
               </div>
             </Field>
           </div>
