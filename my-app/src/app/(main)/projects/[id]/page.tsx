@@ -7,15 +7,15 @@ import { TasksList } from "@/features/tasks/components/TasksList";
 export default function ProjectTasksPage() {
   return (
     <div>
-      <PageToolbar />
-
-      <div className="flex items-center gap-1 px-6 pt-4 text-sm text-gray-500">
-        <Link href="/projects" className="hover:text-gray-700">
-          Projects
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5" />
-        <span className="text-[var(--base-primary)]">Design Homepage</span>
-      </div>
+      <PageToolbar>
+        <div className="flex items-center gap-1 font-sans text-sm text-[var(--base-muted-foreground)]">
+          <Link href="/projects" className="hover:text-[var(--base-primary)]">
+            Projects
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="text-[var(--base-primary)]">Design Homepage</span>
+        </div>
+      </PageToolbar>
 
       <TasksHeader />
       <TasksList />
