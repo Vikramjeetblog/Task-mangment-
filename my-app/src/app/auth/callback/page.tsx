@@ -33,7 +33,7 @@ function CallbackHandler() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-white">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-black" />
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-black" />
       <p className="text-sm text-gray-500">Signing you in…</p>
     </div>
   );
