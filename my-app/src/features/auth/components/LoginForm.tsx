@@ -7,8 +7,6 @@ import { useRouter } from "next/navigation";
 import { guestLogin, googleLoginUrl } from "@/features/auth/api/auth.api";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
 
-const PRESENCE_COLORS = ["#F97316", "#EC4899", "#171717"];
-
 export default function LoginForm() {
   const router = useRouter();
   const setSession = useAuthStore((state) => state.setSession);
@@ -33,47 +31,7 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center gap-6 overflow-hidden bg-[var(--base-popover)] px-4">
-      {/* Decorative presence avatar, top-right */}
-      <div className="pointer-events-none absolute right-6 top-6 hidden sm:right-10 sm:top-10 md:block lg:right-24 lg:top-24">
-        <div
-          className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white text-xs font-medium text-white shadow-sm"
-          style={{ background: PRESENCE_COLORS[2] }}
-        >
-          M
-        </div>
-      </div>
-
-      {/* Decorative presence avatar stack, bottom-right */}
-      <div className="pointer-events-none absolute bottom-10 right-8 hidden sm:right-16 sm:bottom-16 md:flex lg:right-28 lg:bottom-28">
-        <div className="flex -space-x-2">
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-white shadow-sm"
-            style={{ background: "#10B981" }}
-          >
-            <svg
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="h-3.5 w-3.5"
-            >
-              <path
-                fillRule="evenodd"
-                d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </div>
-          <div
-            className="h-8 w-8 rounded-full border-2 border-white shadow-sm"
-            style={{ background: PRESENCE_COLORS[0] }}
-          />
-          <div
-            className="h-8 w-8 rounded-full border-2 border-white shadow-sm"
-            style={{ background: PRESENCE_COLORS[2] }}
-          />
-        </div>
-      </div>
-
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[var(--base-popover)] px-4">
       <div className="flex items-center justify-center gap-2">
         <div style={{ background: "var(--accent)" }}
           className="flex h-6 w-6 items-center justify-center rounded-md text-white">
