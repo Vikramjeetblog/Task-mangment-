@@ -1,7 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, UserDocument } from './schemas/user.schema';
+import { AuthProvider, User, UserDocument } from './schemas/user.schema';
+
+// Shape we actually send to the frontend - keeps internal fields (like googleId) out of API responses
+export interface PublicUser {
+  id: string;
+  name: string;
+  email?: string;
+  avatarColor: string;
+  avatarUrl?: string;
+  title?: string;
+  username?: string;
+  provider: AuthProvider;
+}
 
 const AVATAR_COLORS = [
   '#F59E0B',
@@ -33,16 +45,23 @@ export class UsersService {
     googleId: string;
     email: string;
     name: string;
+    avatarUrl?: string;
   }): Promise<UserDocument> {
     const existing = await this.userModel.findOne({
       googleId: profile.googleId,
     });
-    if (existing) return existing;
+    if (existing) {
+      // Keep the photo fresh in case they changed it on their Google account
+      existing.avatarUrl = profile.avatarUrl;
+      await existing.save();
+      return existing;
+    }
 
     return this.userModel.create({
       name: profile.name,
       email: profile.email,
       googleId: profile.googleId,
+      avatarUrl: profile.avatarUrl,
       provider: 'google',
       avatarColor: randomAvatarColor(),
     });
@@ -50,5 +69,25 @@ export class UsersService {
 
   async findById(id: string): Promise<UserDocument | null> {
     return this.userModel.findById(id);
+  }
+
+  async updateProfile(
+    id: string,
+    changes: { name?: string; title?: string; username?: string },
+  ): Promise<UserDocument | null> {
+    return this.userModel.findByIdAndUpdate(id, changes, { new: true });
+  }
+
+  toPublicUser(user: UserDocument): PublicUser {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatarColor: user.avatarColor,
+      avatarUrl: user.avatarUrl,
+      title: user.title,
+      username: user.username,
+      provider: user.provider,
+    };
   }
 }

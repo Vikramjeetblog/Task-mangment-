@@ -7,6 +7,7 @@ export interface GoogleProfile {
   googleId: string;
   email: string;
   name: string;
+  avatarUrl?: string;
 }
 
 @Injectable()
@@ -31,6 +32,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       googleId: profile.id,
       email,
       name: profile.displayName || email,
+      avatarUrl: profile.photos?.[0]?.value,
     });
   }
 }

@@ -16,6 +16,16 @@ export class User {
   @Prop()
   avatarColor: string;
 
+  // Set for Google accounts (their real profile photo). Guests don't have one.
+  @Prop()
+  avatarUrl?: string;
+
+  @Prop()
+  title?: string;
+
+  @Prop()
+  username?: string;
+
   @Prop({ required: true, enum: ['guest', 'google'] })
   provider: AuthProvider;
 

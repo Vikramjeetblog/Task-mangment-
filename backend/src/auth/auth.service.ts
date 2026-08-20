@@ -1,15 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserDocument } from '../users/schemas/user.schema';
-import { UsersService } from '../users/users.service';
-
-export interface PublicUser {
-  id: string;
-  name: string;
-  email?: string;
-  avatarColor: string;
-  provider: 'guest' | 'google';
-}
+import { PublicUser, UsersService } from '../users/users.service';
+import { GoogleProfile } from './strategies/google.strategy';
 
 @Injectable()
 export class AuthService {
@@ -26,13 +19,7 @@ export class AuthService {
   }
 
   toPublicUser(user: UserDocument): PublicUser {
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      avatarColor: user.avatarColor,
-      provider: user.provider,
-    };
+    return this.usersService.toPublicUser(user);
   }
 
   async loginAsGuest() {
@@ -40,11 +27,7 @@ export class AuthService {
     return { token: this.signToken(user), user: this.toPublicUser(user) };
   }
 
-  async loginWithGoogle(profile: {
-    googleId: string;
-    email: string;
-    name: string;
-  }) {
+  async loginWithGoogle(profile: GoogleProfile) {
     const user = await this.usersService.findOrCreateGoogleUser(profile);
     return { token: this.signToken(user), user: this.toPublicUser(user) };
   }

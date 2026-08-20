@@ -1,8 +1,11 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
+  Patch,
   Post,
   Req,
   Res,
@@ -16,11 +19,14 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { UserDocument } from '../users/schemas/user.schema';
 import type { GoogleProfile } from './strategies/google.strategy';
+import { UsersService } from '../users/users.service';
+import { UpdateProfileDto } from '../users/dto/update-profile.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
+    private usersService: UsersService,
     private configService: ConfigService,
   ) {}
 
@@ -51,5 +57,18 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: UserDocument) {
     return this.authService.toPublicUser(user);
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  async updateMe(
+    @CurrentUser() user: UserDocument,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    const updated = await this.usersService.updateProfile(user.id, dto);
+    if (!updated) {
+      throw new NotFoundException('User not found');
+    }
+    return this.usersService.toPublicUser(updated);
   }
 }
