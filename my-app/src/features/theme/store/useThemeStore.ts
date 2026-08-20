@@ -25,7 +25,7 @@ export const useThemeStore = create<ThemeStore>()(
   persist(
     (set) => ({
       mode: "light",
-      accentColor: "Blue",
+      accentColor: "Black",
       setMode: (mode) => set({ mode }),
       setAccentColor: (accentColor) => set({ accentColor }),
     }),
